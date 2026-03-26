@@ -12,12 +12,12 @@ jobs:
 
     steps:
     - name: 获取代码
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4  # 🚀 这里升级到了 v4
     
     - name: 安装 Python 3.10
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5  # 🚀 这里升级到了 v5
       with:
-        python-version: '3.10' # 3.10 兼容音频库最好
+        python-version: '3.10'
         
     - name: 安装环境和打包工具
       run: |
@@ -31,7 +31,7 @@ jobs:
         pyinstaller --onefile --windowed LAX_AI_Agent_Pro.py
         
     - name: 输出并保存 EXE 文件
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # 🚀 核心修复：升级到了强制要求的 v4
       with:
         name: LAX_AI_Agent_Pro_Windows_Version
         path: dist/LAX_AI_Agent_Pro.exe
