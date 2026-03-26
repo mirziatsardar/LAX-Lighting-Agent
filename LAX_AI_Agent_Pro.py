@@ -1,4 +1,3 @@
-pip install pyaudio aubio numpy
 import tkinter as tk
 from tkinter import ttk, messagebox
 import socket
