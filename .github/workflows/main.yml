@@ -1,37 +1,43 @@
-name: Build Windows EXE
+name: Build LAX EXE
 
-# 这个指令会在你上传代码，或者手动点击时触发
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-latest  # 召唤一台最新的微软 Windows 云服务器
+    runs-on: windows-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # 解决 Node.js 20 警告
 
     steps:
-    - name: 获取代码
-      uses: actions/checkout@v4  # 🚀 这里升级到了 v4
-    
-    - name: 安装 Python 3.10
-      uses: actions/setup-python@v5  # 🚀 这里升级到了 v5
-      with:
-        python-version: '3.10'
-        
-    - name: 安装环境和打包工具
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
-        
-    - name: 开始用 PyInstaller 打包
-      # --onefile 打包成单文件，--windowed 隐藏黑色的命令行窗口
-      run: |
-        pyinstaller --onefile --windowed LAX_AI_Agent_Pro.py
-        
-    - name: 输出并保存 EXE 文件
-      uses: actions/upload-artifact@v4  # 🚀 核心修复：升级到了强制要求的 v4
-      with:
-        name: LAX_AI_Agent_Pro_Windows_Version
-        path: dist/LAX_AI_Agent_Pro.exe
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 国内清华镜像安装依赖
+        run: |
+          pip install -i https://pypi.tuna.tsinghua.edu.cn/simple numpy pyaudio aubio sacn pyinstaller
+
+      - name: 打包 EXE（强制打包所有音频 DLL）
+        run: |
+          pyinstaller --onefile --noconsole ^
+            --hidden-import=pyaudio ^
+            --hidden-import=aubio ^
+            --hidden-import=sacn ^
+            --hidden-import=numpy ^
+            --collect-all pyaudio ^
+            --collect-all aubio ^
+            --collect-all sacn ^
+            --collect-all numpy ^
+            LAX_Light_Engine_V3.0.py
+
+      - name: 上传生成的 EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAX_AI_Agent_Pro_Windows_Version
+          path: dist/LAX_AI_Agent_Pro.exe
