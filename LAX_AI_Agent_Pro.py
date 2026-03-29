@@ -7,6 +7,7 @@ import random
 import threading
 import json
 import os
+import librosa
 try:
     import numpy as np
     import pyaudio
@@ -51,29 +52,36 @@ FIXTURE_TYPES = {
 active_fixtures = [] # 当前场景中已添加的灯具列表
 
 # ==========================================
-# 线程 1：AI 听觉引擎 (Aubio 实时节拍检测)
+# 线程 1：AI 听觉引擎 (librosa 实时版 - 稳定打包)
 # ==========================================
 def audio_listener_thread():
     global is_running, beat_hit_flag, audio_energy
     try:
+        import librosa
         BUFFER_SIZE = 1024
         SAMPLE_RATE = 44100
         p = pyaudio.PyAudio()
-        stream = p.open(format=pyaudio.paFloat32, channels=1, rate=SAMPLE_RATE, input=True, frames_per_buffer=BUFFER_SIZE)
-        tempo_detector = aubio.tempo("default", BUFFER_SIZE * 2, BUFFER_SIZE, SAMPLE_RATE)
+        stream = p.open(format=pyaudio.paFloat32, channels=1, rate=SAMPLE_RATE,
+                        input=True, frames_per_buffer=BUFFER_SIZE)
 
         while is_running:
             audio_data = stream.read(BUFFER_SIZE, exception_on_overflow=False)
             samples = np.frombuffer(audio_data, dtype=np.float32)
+            
+            # 实时能量
             audio_energy = np.sum(samples**2) / len(samples)
-            if tempo_detector(samples)[0]:
+            
+            # 鼓点检测（librosa onset）
+            onset_env = librosa.onset.onset_strength(y=samples, sr=SAMPLE_RATE)
+            if len(onset_env) > 0 and onset_env[0] > 1.5:   # 阈值可调
                 beat_hit_flag = True
+
     except Exception as e:
-        print(f"音频模块未加载或出错: {e}，将使用内部模拟节拍。")
-        # 如果音频库报错（比如没插麦克风），启用模拟心跳，保证系统能跑
+        print(f"实时麦克风出错: {e}，进入模拟模式")
         while is_running:
             audio_energy = 0.5 + 0.3 * math.sin(time.time() * 2)
-            if int(time.time() * 2) % 2 == 0: beat_hit_flag = True
+            if int(time.time() * 2) % 2 == 0:
+                beat_hit_flag = True
             time.sleep(0.5)
 
 # ==========================================
