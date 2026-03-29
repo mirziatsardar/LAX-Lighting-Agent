@@ -19,43 +19,21 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 国内清华镜像安装依赖（强制 wheel）
+      - name: 官方 PyPI 安装依赖（国外库）
         run: |
-          pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --only-binary :all: numpy pyaudio aubio sacn pyinstaller
+          pip install numpy pyaudio librosa sacn pyinstaller
 
-      - name: 强制打包所有音频 DLL（最强模式）
+      - name: 打包 EXE（强制收集所有音频库）
         run: |
           pyinstaller --onefile --noconsole `
             --hidden-import=pyaudio `
-            --hidden-import=aubio `
+            --hidden-import=librosa `
             --hidden-import=sacn `
             --hidden-import=numpy `
             --collect-all pyaudio `
-            --collect-all aubio `
-            --collect-binaries pyaudio `
-            --collect-binaries aubio `
-            --collect-data pyaudio `
-            --collect-data aubio `
+            --collect-all librosa `
+            --collect-all sacn `
             --collect-all numpy `
-            LAX_AI_Agent_Pro.py
-
-      - name: 手动复制常见 DLL（保险）
-        run: |
-          python -c "
-          import pyaudio, aubio, os, shutil
-          for mod in [pyaudio, aubio]:
-              path = os.path.dirname(mod.__file__)
-              for file in os.listdir(path):
-                  if file.endswith(('.dll', '.pyd')):
-                      shutil.copy(os.path.join(path, file), '.')
-          print('DLL 已复制到根目录')
-          "
-
-      - name: 再次打包（把 DLL 一起打包）
-        run: |
-          pyinstaller --onefile --noconsole `
-            --add-binary "*.dll;." `
-            --add-binary "*.pyd;." `
             LAX_AI_Agent_Pro.py
 
       - name: 上传 EXE
