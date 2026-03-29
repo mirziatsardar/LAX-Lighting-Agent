@@ -19,11 +19,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 国内清华镜像安装依赖
+      - name: 国内清华镜像安装依赖（强制 wheel）
         run: |
-          pip install -i https://pypi.tuna.tsinghua.edu.cn/simple numpy pyaudio aubio sacn pyinstaller
+          pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --only-binary :all: numpy pyaudio aubio sacn pyinstaller
 
-      - name: 打包 EXE（强制收集所有音频 DLL）
+      - name: 强制打包所有音频 DLL（最强模式）
         run: |
           pyinstaller --onefile --noconsole `
             --hidden-import=pyaudio `
@@ -32,11 +32,33 @@ jobs:
             --hidden-import=numpy `
             --collect-all pyaudio `
             --collect-all aubio `
-            --collect-all sacn `
+            --collect-binaries pyaudio `
+            --collect-binaries aubio `
+            --collect-data pyaudio `
+            --collect-data aubio `
             --collect-all numpy `
             LAX_AI_Agent_Pro.py
 
-      - name: 上传生成的 EXE
+      - name: 手动复制常见 DLL（保险）
+        run: |
+          python -c "
+          import pyaudio, aubio, os, shutil
+          for mod in [pyaudio, aubio]:
+              path = os.path.dirname(mod.__file__)
+              for file in os.listdir(path):
+                  if file.endswith(('.dll', '.pyd')):
+                      shutil.copy(os.path.join(path, file), '.')
+          print('DLL 已复制到根目录')
+          "
+
+      - name: 再次打包（把 DLL 一起打包）
+        run: |
+          pyinstaller --onefile --noconsole `
+            --add-binary "*.dll;." `
+            --add-binary "*.pyd;." `
+            LAX_AI_Agent_Pro.py
+
+      - name: 上传 EXE
         uses: actions/upload-artifact@v4
         with:
           name: LAX_AI_Agent_Pro_Windows_Version
