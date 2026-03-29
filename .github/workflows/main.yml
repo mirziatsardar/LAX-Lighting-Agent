@@ -34,7 +34,7 @@ jobs:
             --collect-all aubio `
             --collect-all sacn `
             --collect-all numpy `
-            LAX_Light_Engine_V3.0.py
+            LAX_AI_Agent_Pro.py
 
       - name: 上传生成的 EXE
         uses: actions/upload-artifact@v4
